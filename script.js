@@ -3,18 +3,86 @@ import { Tile } from "./tile.js";
 
 const gameBoard = document.getElementById("game-board");
 
+window.addEventListener('resize', function() {
+ grid.render(gameBoard);
+});
+
 const grid = new Grid(gameBoard);
+
 grid.getRandomEmptyCell().linkTile(new Tile(gameBoard));
 grid.getRandomEmptyCell().linkTile(new Tile(gameBoard));
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+
+document.addEventListener('touchstart', function(event) {
+  touchStartX = event.touches[0].clientX;
+  touchStartY = event.touches[0].clientY;
+});
+
+document.addEventListener('touchmove', function(event) {
+  event.preventDefault();
+});
+
+document.addEventListener('touchend', function(event) {
+  touchEndX = event.changedTouches[0].clientX;
+  touchEndY = event.changedTouches[0].clientY;
+  handleSwipe();
+});
+
+async function handleSwipe() {
+  const deltaX = touchEndX - touchStartX;
+  const deltaY = touchEndY - touchStartY;
+  if (Math.abs(deltaX) > Math.abs(deltaY)) {
+  
+    if (deltaX > 0) {
+      if (!canMoveRight()) {
+        setupInputOnce();
+        return;
+      }
+      await moveRight();           
+    } else {
+      if (!canMoveLeft()) {
+        setupInputOnce();
+        return;
+      }
+      await moveLeft();
+    }
+  } else {
+    if (deltaY > 0) {
+      if (!canMoveDown()) {
+        setupInputOnce();
+        return;
+      }
+      await moveDown();
+    } else {
+       if (!canMoveUp()) {
+        setupInputOnce();
+        return;
+      }
+      await moveUp();
+    }
+  }
+  const newTile = new Tile(gameBoard);
+  grid.getRandomEmptyCell().linkTile(newTile);
+
+  if (!canMoveUp() && !canMoveDown() && !canMoveLeft() && !canMoveRight()) {
+    await newTile.waitForAnimationEnd()
+    alert("Try again!")
+    return;
+  }
+}
+  
 setupInputOnce();
-
-
 function setupInputOnce() {
   window.addEventListener("keydown", handleInput, { once: true });
 }
 
 async function handleInput(event) {
   switch (event.key) {
+    case 'w':
+    case 'ц':
     case "ArrowUp":
       if (!canMoveUp()) {
         setupInputOnce();
@@ -22,6 +90,8 @@ async function handleInput(event) {
       }
       await moveUp();
       break;
+    case 's':
+    case 'ы':
     case "ArrowDown":
       if (!canMoveDown()) {
         setupInputOnce();
@@ -29,6 +99,8 @@ async function handleInput(event) {
       }
       await moveDown();
       break;
+    case 'a':
+    case 'ф':
     case "ArrowLeft":
       if (!canMoveLeft()) {
         setupInputOnce();
@@ -36,6 +108,8 @@ async function handleInput(event) {
       }
       await moveLeft();
       break;
+    case 'd':
+    case 'в':
     case "ArrowRight":
       if (!canMoveRight()) {
         setupInputOnce();
@@ -48,6 +122,7 @@ async function handleInput(event) {
       return;
   }
 
+
   const newTile = new Tile(gameBoard);
   grid.getRandomEmptyCell().linkTile(newTile);
 
@@ -59,6 +134,13 @@ async function handleInput(event) {
 
   setupInputOnce();
 }
+
+
+
+  
+
+
+
 
 async function moveUp() {
   await slideTiles(grid.cellsGroupedByColumn);
@@ -117,6 +199,9 @@ function slideTilesInGroup(group, promises) {
     cellWithTile.unlinkTile();
   }
 }
+
+
+
 
 function canMoveUp() {
   return canMove(grid.cellsGroupedByColumn);
